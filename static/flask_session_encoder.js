@@ -23,6 +23,12 @@
  *   document.cookie = `session=${cookie}; path=/`;
  *
  * ⚠️  FOR LOCAL TESTING ONLY — never expose a real secret key on the frontend.
+ *
+ * Security notice:
+ *   Flask / itsdangerous uses HMAC-SHA1, which is cryptographically weak by
+ *   modern standards. SHA-1 collision attacks are well-documented. This file
+ *   reproduces that algorithm purely for local test-environment compatibility
+ *   and MUST NOT be used in any production or public-facing context.
  */
 
 /**
@@ -117,9 +123,12 @@ async function encodeFlaskSession(payload, secretKey) {
  * @param {Object} payload   - Session payload (e.g. { logged_in: true }).
  * @param {string} secretKey - Flask app.secret_key.
  * @param {string} [path='/'] - Cookie path.
+ * @param {boolean} [secure]  - Add the Secure flag. Defaults to true when the
+ *                              page is served over HTTPS, false otherwise.
  */
-async function setFlaskSessionCookie(payload, secretKey, path = '/') {
+async function setFlaskSessionCookie(payload, secretKey, path = '/', secure = (location.protocol === 'https:')) {
   const cookieValue = await encodeFlaskSession(payload, secretKey);
-  document.cookie = `session=${cookieValue}; path=${path}; SameSite=Lax`;
+  const secureFlag = secure ? '; Secure' : '';
+  document.cookie = `session=${cookieValue}; path=${path}; SameSite=Lax${secureFlag}`;
   return cookieValue;
 }
